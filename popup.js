@@ -73,7 +73,7 @@ function addCase() {
   const caseInput = document.getElementById('case-input');
   const caseNumber = caseInput.value.trim();
   if (caseNumber && !cases.includes(caseNumber)) {
-    cases.push(caseNumber);
+    cases.unshift(caseNumber); // Add the new case to the beginning of the array
     updateCaseList();
     saveCases();
     caseInput.value = '';
