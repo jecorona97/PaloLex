@@ -44,26 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
         saveCases(); // Persist cases
         caseInput.value = ''; // Clear input
         console.log('Added case:', caseNumber);
+        refreshHighlights(); // Automatically refresh highlights when a new case is added
       } else {
         console.log('Case not added:', caseNumber, 'Already exists:', cases.includes(caseNumber));
       }
-    });
-  }
-
-  // Trigger search on current tab
-  const searchCasesButton = document.getElementById('search-cases');
-  if (searchCasesButton) {
-    searchCasesButton.addEventListener('click', function() {
-      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id },
-          files: ['content.js'] // Inject the content script
-        }, () => {
-          // After injecting, send a message to the content script to start searching
-          chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases });
-          console.log('Triggered search for cases:', cases);
-        });
-      });
     });
   }
 
@@ -100,7 +84,7 @@ function updateCaseList() {
       cases = cases.filter(c => c !== caseNumber);
       updateCaseList();
       saveCases(); // Persist updated cases
-      refreshHighlights(); // Refresh highlights when a case is removed
+      refreshHighlights(); // Automatically refresh highlights when a case is removed
       console.log('Removed case:', caseNumber);
     });
 
@@ -116,7 +100,7 @@ function saveCases() {
   });
 }
 
-// Function to refresh highlights when a case is removed
+// Function to refresh highlights when a case is added or removed
 function refreshHighlights() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     chrome.scripting.executeScript({
