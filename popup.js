@@ -10,6 +10,15 @@ let cases = [];
 
 // Load persisted cases on popup open
 document.addEventListener('DOMContentLoaded', () => {
+  loadPersistedCases();
+  triggerSearchOnPopupOpen();
+  setupAddCaseButton();
+  setupPopupElement();
+  setupSummaryButton();
+});
+
+// Load persisted cases from storage
+function loadPersistedCases() {
   chrome.storage.local.get(['cases'], function(result) {
     if (result.cases) {
       cases = result.cases;
@@ -19,76 +28,106 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('No cases found in storage');
     }
   });
+}
 
-  // Trigger search on current tab when the popup is opened
+// Trigger search on current tab when the popup is opened
+function triggerSearchOnPopupOpen() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
-      files: ['content.js'] // Inject the content script
+      files: ['content.js']
     }, () => {
-      // After injecting, send a message to the content script to start searching
       chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases });
       console.log('Triggered search for cases:', cases);
     });
   });
+}
 
-  // Add case to the list
+// Setup the add case button
+function setupAddCaseButton() {
   const addCaseButton = document.getElementById('add-case');
   if (addCaseButton) {
-    addCaseButton.addEventListener('click', function() {
-      const caseInput = document.getElementById('case-input');
-      const caseNumber = caseInput.value.trim();
-      if (caseNumber && !cases.includes(caseNumber)) {
-        cases.push(caseNumber);
-        updateCaseList();
-        saveCases(); // Persist cases
-        caseInput.value = ''; // Clear input
-        console.log('Added case:', caseNumber);
-        refreshHighlights(); // Automatically refresh highlights when a new case is added
-      } else {
-        console.log('Case not added:', caseNumber, 'Already exists:', cases.includes(caseNumber));
-      }
-    });
+    addCaseButton.addEventListener('click', addCase);
   }
+}
 
-  // Reference the page after popup is clicked and search is triggered
+// Add case to the list
+function addCase() {
+  const caseInput = document.getElementById('case-input');
+  const caseNumber = caseInput.value.trim();
+  if (caseNumber && !cases.includes(caseNumber)) {
+    cases.push(caseNumber);
+    updateCaseList();
+    saveCases();
+    caseInput.value = '';
+    console.log('Added case:', caseNumber);
+    refreshHighlights();
+  } else {
+    console.log('Case not added:', caseNumber, 'Already exists:', cases.includes(caseNumber));
+  }
+}
+
+// Setup the popup element
+function setupPopupElement() {
   const popupElement = document.getElementById('popup');
   if (popupElement) {
-    popupElement.addEventListener('click', function() {
-      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases }, function(response) {
-          console.log('Refreshed highlights for remaining cases:', cases);
-        });
-      });
-    });
+    popupElement.addEventListener('click', refreshHighlightsOnPopupClick);
   }
-  // Add event listener for the summary button
+}
+
+// Refresh highlights when the popup is clicked
+function refreshHighlightsOnPopupClick() {
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases }, function(response) {
+      console.log('Refreshed highlights for remaining cases:', cases);
+    });
+  });
+}
+
+// Setup the summary button
+function setupSummaryButton() {
   const summaryButton = document.getElementById('summary-button');
   if (summaryButton) {
-    summaryButton.addEventListener('click', function() {
-      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id },
-          func: (cases) => {
-            // Collect all matches on the page
-            const matches = [];
-            document.querySelectorAll('tr').forEach(row => {
-              cases.forEach(caseNumber => {
-                if (row.textContent.includes(caseNumber)) {
-                  const columns = row.querySelectorAll('td');
-                  const lastTwoColumns = Array.from(columns).slice(-2).map(col => col.innerHTML).join('</td><td>');
-                  matches.push(`<tr><td>${lastTwoColumns}</td></tr>`);
-                }
-              });
-            });
-            return matches;
-          },
-          args: [cases]
-        }, (results) => {
-          const matches = results[0].result;
-          if (matches.length > 0) {
-            // Create a new tab with the matches
-            const newTabContent = `
+    summaryButton.addEventListener('click', generateSummary);
+  }
+}
+
+// Generate summary of case matches
+function generateSummary() {
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      func: collectMatches,
+      args: [cases]
+    }, (results) => {
+      const matches = results[0].result;
+      if (matches.length > 0) {
+        createNewTabWithMatches(matches);
+      } else {
+        console.log('No matches found.');
+      }
+    });
+  });
+}
+
+// Collect all matches on the page
+function collectMatches(cases) {
+  const matches = [];
+  document.querySelectorAll('tr').forEach(row => {
+    cases.forEach(caseNumber => {
+      if (row.textContent.includes(caseNumber)) {
+        const columns = row.querySelectorAll('td');
+        const lastTwoColumns = Array.from(columns).slice(-2).map(col => col.innerHTML).join('</td><td>');
+        matches.push(`<tr><td>${lastTwoColumns}</td></tr>`);
+      }
+    });
+  });
+  return matches;
+}
+
+// Create a new tab with the matches
+function createNewTabWithMatches(matches) {
+  const newTabContent = `
 <!DOCTYPE html>
 <html>
   <head>
@@ -109,27 +148,19 @@ document.addEventListener('DOMContentLoaded', () => {
     </table>
   </body>
 </html>
-            `;
-            console.log('New Tab Content:', newTabContent); // Debugging line
-            const blob = new Blob([newTabContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            chrome.tabs.create({ url: url }, function(tab) {
-              // Revoke the object URL after the tab is created to free up memory
-              setTimeout(() => URL.revokeObjectURL(url), 1000);
-            });
-          } else {
-            console.log('No matches found.');
-          }
-        });
-      });
-    });
-  }
-}); // <-- Added missing closing brace here
+  `;
+  console.log('New Tab Content:', newTabContent);
+  const blob = new Blob([newTabContent], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  chrome.tabs.create({ url: url }, function(tab) {
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+}
 
 // Update the UI list
 function updateCaseList() {
   const caseList = document.getElementById('case-list');
-  caseList.innerHTML = ''; // Clear list
+  caseList.innerHTML = '';
 
   cases.forEach(caseNumber => {
     const li = document.createElement('li');
@@ -140,19 +171,19 @@ function updateCaseList() {
         <img src="${chrome.runtime.getURL('assets/tashbin.png')}" alt="Delete" width="16" height="16">
       </span>
     `;
-    
-    // Add delete functionality
-    li.querySelector('.delete-icon').addEventListener('click', () => {
-      cases = cases.filter(c => c !== caseNumber);
-      updateCaseList();
-      saveCases(); // Persist updated cases
-      refreshHighlights(); // Automatically refresh highlights when a case is removed
-      console.log('Removed case:', caseNumber);
-    });
-
+    li.querySelector('.delete-icon').addEventListener('click', () => deleteCase(caseNumber));
     caseList.appendChild(li);
   });
   console.log('Updated case list:', cases);
+}
+
+// Delete a case from the list
+function deleteCase(caseNumber) {
+  cases = cases.filter(c => c !== caseNumber);
+  updateCaseList();
+  saveCases();
+  refreshHighlights();
+  console.log('Removed case:', caseNumber);
 }
 
 // Save cases to storage
@@ -168,11 +199,9 @@ function refreshHighlights() {
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
       func: (cases) => {
-        // Remove all existing highlights
         document.querySelectorAll('tr').forEach(row => {
           row.style.backgroundColor = '';
         });
-        // Re-apply highlights for remaining cases
         searchCasesInPage(cases);
       },
       args: [cases]
