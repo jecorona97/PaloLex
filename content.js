@@ -5,10 +5,31 @@
  * user-specified case numbers across browsing sessions.
  */
 
-// Array to store case numbers (will be populated from chrome.storage in practice)
-const caseNumbers = ["00037/2024", "00635/2024", "760/2016"];
+let cases = [];
 let currentMatchIndex = -1;
 let allMatches = [];
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "searchCases") {
+    searchCasesInPage(request.cases);
+  } else if (request.action === "updateCases") {
+    cases = request.cases;
+    resetHighlights();
+    searchCasesInPage(cases);
+  }
+});
+
+function searchCasesInPage(casesToSearch) {
+  resetHighlights();
+  casesToSearch.forEach(caseNumber => highlightRows(caseNumber));
+  initializeNavigation();
+}
+
+function resetHighlights() {
+  allMatches.forEach(match => match.style.backgroundColor = '');
+  allMatches = [];
+  currentMatchIndex = -1;
+}
 
 /**
  * Escapes special characters in a string for use in a regular expression.
@@ -33,24 +54,16 @@ function highlightRows(caseNumber) {
             allMatches.push(row);
         }
     });
+    console.log(`Highlighted ${allMatches.length} matches for case number: ${caseNumber}`);
 }
-
-// Highlight all cases in the existing list
-caseNumbers.forEach(caseNumber => {
-    highlightRows(caseNumber);
-});
 
 /**
  * Navigates to the next matching case number in the document.
  */
 function goToNextMatch() {
     if (allMatches.length === 0) return;
-
     currentMatchIndex = (currentMatchIndex + 1) % allMatches.length;
-    const match = allMatches[currentMatchIndex];
-    match.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    match.style.backgroundColor = 'orange';
-    setTimeout(() => match.style.backgroundColor = 'yellow', 1000);
+    highlightCurrentMatch();
 }
 
 /**
@@ -58,29 +71,55 @@ function goToNextMatch() {
  */
 function goToPreviousMatch() {
     if (allMatches.length === 0) return;
-
     currentMatchIndex = (currentMatchIndex - 1 + allMatches.length) % allMatches.length;
-    const match = allMatches[currentMatchIndex];
-    match.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    match.style.backgroundColor = 'orange';
-    setTimeout(() => match.style.backgroundColor = 'yellow', 1000);
+    highlightCurrentMatch();
 }
 
-// Create and append navigation buttons
-const nextButton = document.createElement('button');
-nextButton.innerText = 'Next Match';
-nextButton.style.position = 'fixed';
-nextButton.style.bottom = '10px';
-nextButton.style.right = '10px';
-nextButton.style.zIndex = 1000;
-nextButton.onclick = goToNextMatch;
-document.body.appendChild(nextButton);
+function highlightCurrentMatch() {
+  allMatches.forEach(match => match.style.backgroundColor = 'yellow');
+  if (currentMatchIndex >= 0 && currentMatchIndex < allMatches.length) {
+    const match = allMatches[currentMatchIndex];
+    match.style.backgroundColor = 'orange';
+    match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
 
-const prevButton = document.createElement('button');
-prevButton.innerText = 'Previous Match';
-prevButton.style.position = 'fixed';
-prevButton.style.bottom = '10px';
-prevButton.style.right = '90px';
-prevButton.style.zIndex = 1000;
-prevButton.onclick = goToPreviousMatch;
-document.body.appendChild(prevButton);
+function initializeNavigation() {
+  if (allMatches.length > 0) {
+    currentMatchIndex = 0;
+    highlightCurrentMatch();
+  }
+  updateNavigationButtons();
+}
+
+function updateNavigationButtons() {
+  const nextButton = document.getElementById('caseFinder-nextButton');
+  const prevButton = document.getElementById('caseFinder-prevButton');
+
+  if (!nextButton) {
+    createNavigationButton('Next Match', 'caseFinder-nextButton', '10px', goToNextMatch);
+  }
+  if (!prevButton) {
+    createNavigationButton('Previous Match', 'caseFinder-prevButton', '90px', goToPreviousMatch);
+  }
+}
+
+function createNavigationButton(text, id, right, onClick) {
+  const button = document.createElement('button');
+  button.innerText = text;
+  button.id = id;
+  button.style.position = 'fixed';
+  button.style.bottom = '10px';
+  button.style.right = right;
+  button.style.zIndex = 1000;
+  button.onclick = onClick;
+  document.body.appendChild(button);
+}
+
+// Initialize with any existing cases
+chrome.storage.local.get(['cases'], function(result) {
+  if (result.cases) {
+    cases = result.cases;
+    searchCasesInPage(cases);
+  }
+});

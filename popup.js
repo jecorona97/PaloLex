@@ -6,8 +6,6 @@
  */
 
 // Array to store the list of case numbers
-
-
 let cases = [];
 
 // Load persisted cases on popup open
@@ -16,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (result.cases) {
       cases = result.cases;
       updateCaseList();
+      console.log('Loaded cases:', cases);
+    } else {
+      console.log('No cases found in storage');
     }
   });
 });
@@ -29,6 +30,9 @@ document.getElementById('add-case').addEventListener('click', function() {
     updateCaseList();
     saveCases(); // Persist cases
     caseInput.value = ''; // Clear input
+    console.log('Added case:', caseNumber);
+  } else {
+    console.log('Case not added:', caseNumber, 'Already exists:', cases.includes(caseNumber));
   }
 });
 
@@ -52,16 +56,19 @@ function updateCaseList() {
       cases = cases.filter(c => c !== caseNumber);
       updateCaseList();
       saveCases(); // Persist updated cases
+      refreshHighlights(); // Refresh highlights when a case is removed
+      console.log('Removed case:', caseNumber);
     });
 
     caseList.appendChild(li);
   });
+  console.log('Updated case list:', cases);
 }
 
 // Save cases to storage
 function saveCases() {
   chrome.storage.local.set({ cases: cases }, function() {
-    console.log('Cases saved');
+    console.log('Cases saved:', cases);
   });
 }
 
@@ -73,6 +80,7 @@ document.getElementById('search-cases').addEventListener('click', function() {
       func: searchCasesInPage,
       args: [cases]
     });
+    console.log('Triggered search for cases:', cases);
   });
 });
 
@@ -95,6 +103,7 @@ function searchCasesInPage(cases) {
         allMatches.push(row);
       }
     });
+    console.log(`Highlighted ${allMatches.length} matches for case number: ${caseNumber}`);
   }
 
   // Highlight all cases
@@ -108,5 +117,27 @@ function searchCasesInPage(cases) {
     allMatches[currentMatchIndex].style.backgroundColor = 'orange';
     
     setTimeout(() => allMatches[currentMatchIndex].style.backgroundColor = 'yellow', 1000);
+    console.log(`Navigated to first match. Total matches: ${allMatches.length}`);
+  } else {
+    console.log('No matches found');
   }
+}
+
+// Function to refresh highlights when a case is removed
+function refreshHighlights() {
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      func: (cases) => {
+        // Remove all existing highlights
+        document.querySelectorAll('tr').forEach(row => {
+          row.style.backgroundColor = '';
+        });
+        // Re-apply highlights for remaining cases
+        searchCasesInPage(cases);
+      },
+      args: [cases]
+    });
+    console.log('Refreshed highlights for remaining cases:', cases);
+  });
 }
