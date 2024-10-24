@@ -31,20 +31,52 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Triggered search for cases:', cases);
     });
   });
-});
 
-// Add case to the list
-document.getElementById('add-case').addEventListener('click', function() {
-  const caseInput = document.getElementById('case-input');
-  const caseNumber = caseInput.value.trim();
-  if (caseNumber && !cases.includes(caseNumber)) {
-    cases.push(caseNumber);
-    updateCaseList();
-    saveCases(); // Persist cases
-    caseInput.value = ''; // Clear input
-    console.log('Added case:', caseNumber);
-  } else {
-    console.log('Case not added:', caseNumber, 'Already exists:', cases.includes(caseNumber));
+  // Add case to the list
+  const addCaseButton = document.getElementById('add-case');
+  if (addCaseButton) {
+    addCaseButton.addEventListener('click', function() {
+      const caseInput = document.getElementById('case-input');
+      const caseNumber = caseInput.value.trim();
+      if (caseNumber && !cases.includes(caseNumber)) {
+        cases.push(caseNumber);
+        updateCaseList();
+        saveCases(); // Persist cases
+        caseInput.value = ''; // Clear input
+        console.log('Added case:', caseNumber);
+      } else {
+        console.log('Case not added:', caseNumber, 'Already exists:', cases.includes(caseNumber));
+      }
+    });
+  }
+
+  // Trigger search on current tab
+  const searchCasesButton = document.getElementById('search-cases');
+  if (searchCasesButton) {
+    searchCasesButton.addEventListener('click', function() {
+      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          files: ['content.js'] // Inject the content script
+        }, () => {
+          // After injecting, send a message to the content script to start searching
+          chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases });
+          console.log('Triggered search for cases:', cases);
+        });
+      });
+    });
+  }
+
+  // Reference the page after popup is clicked and search is triggered
+  const popupElement = document.getElementById('popup');
+  if (popupElement) {
+    popupElement.addEventListener('click', function() {
+      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases }, function(response) {
+          console.log('Refreshed highlights for remaining cases:', cases);
+        });
+      });
+    });
   }
 });
 
@@ -83,20 +115,6 @@ function saveCases() {
     console.log('Cases saved:', cases);
   });
 }
-
-// Trigger search on current tab
-document.getElementById('search-cases').addEventListener('click', function() {
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      files: ['content.js'] // Inject the content script
-    }, () => {
-      // After injecting, send a message to the content script to start searching
-      chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases });
-      console.log('Triggered search for cases:', cases);
-    });
-  });
-});
 
 // Function to refresh highlights when a case is removed
 function refreshHighlights() {
