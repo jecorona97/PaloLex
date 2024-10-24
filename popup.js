@@ -19,6 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('No cases found in storage');
     }
   });
+
+  // Trigger search on current tab when the popup is opened
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      files: ['content.js'] // Inject the content script
+    }, () => {
+      // After injecting, send a message to the content script to start searching
+      chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases });
+      console.log('Triggered search for cases:', cases);
+    });
+  });
 });
 
 // Add case to the list
