@@ -103,7 +103,7 @@
       createNavigationButton('Next Match', 'caseFinder-nextButton', '10px', goToNextMatch);
     }
     if (!prevButton) {
-      createNavigationButton('Previous Match', 'caseFinder-prevButton', '90px', goToPreviousMatch);
+      createNavigationButton('Previous Match', 'caseFinder-prevButton', '110px', goToPreviousMatch); // Adjusted right position to add space
     }
     if (!matchCounter) {
       createMatchCounter('caseFinder-matchCounter', '10px');
@@ -118,6 +118,17 @@
     button.style.bottom = '10px';
     button.style.right = right;
     button.style.zIndex = 1000;
+    button.style.backgroundColor = '#007bff';
+    button.style.color = 'white';
+    button.style.border = 'none';
+    button.style.borderRadius = '4px';
+    button.style.padding = '8px 12px';
+    button.style.cursor = 'pointer';
+    button.style.fontSize = '14px';
+    button.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.2)';
+    button.style.transition = 'background-color 0.3s';
+    button.onmouseover = () => button.style.backgroundColor = '#0056b3';
+    button.onmouseout = () => button.style.backgroundColor = '#007bff';
     button.onclick = onClick;
     document.body.appendChild(button);
   }
@@ -130,8 +141,11 @@
     counter.style.right = right;
     counter.style.zIndex = 1000;
     counter.style.backgroundColor = 'white';
-    counter.style.padding = '5px';
-    counter.style.border = '1px solid black';
+    counter.style.padding = '5px 10px';
+    counter.style.border = '1px solid #ccc';
+    counter.style.borderRadius = '4px';
+    counter.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.1)';
+    counter.style.fontSize = '14px';
     document.body.appendChild(counter);
     updateMatchCounter();
   }
