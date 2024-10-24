@@ -77,51 +77,14 @@ document.getElementById('search-cases').addEventListener('click', function() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
-      func: searchCasesInPage,
-      args: [cases]
+      files: ['content.js'] // Inject the content script
+    }, () => {
+      // After injecting, send a message to the content script to start searching
+      chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases });
+      console.log('Triggered search for cases:', cases);
     });
-    console.log('Triggered search for cases:', cases);
   });
 });
-
-// Function to search cases in the current page
-function searchCasesInPage(cases) {
-  let currentMatchIndex = -1;
-  let allMatches = [];
-
-  function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  function highlightRows(caseNumber) {
-    const regex = new RegExp(escapeRegExp(caseNumber), 'gi');
-    const rows = document.querySelectorAll('tr');
-    
-    rows.forEach(row => {
-      if (regex.test(row.innerText)) {
-        row.style.backgroundColor = 'yellow';
-        allMatches.push(row);
-      }
-    });
-    console.log(`Highlighted ${allMatches.length} matches for case number: ${caseNumber}`);
-  }
-
-  // Highlight all cases
-  cases.forEach(caseNumber => {
-    highlightRows(caseNumber);
-  });
-
-  if (allMatches.length > 0) {
-    currentMatchIndex = 0;
-    allMatches[currentMatchIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    allMatches[currentMatchIndex].style.backgroundColor = 'orange';
-    
-    setTimeout(() => allMatches[currentMatchIndex].style.backgroundColor = 'yellow', 1000);
-    console.log(`Navigated to first match. Total matches: ${allMatches.length}`);
-  } else {
-    console.log('No matches found');
-  }
-}
 
 // Function to refresh highlights when a case is removed
 function refreshHighlights() {
