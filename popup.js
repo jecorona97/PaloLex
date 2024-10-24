@@ -62,7 +62,69 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
-});
+  // Add event listener for the summary button
+  const summaryButton = document.getElementById('summary-button');
+  if (summaryButton) {
+    summaryButton.addEventListener('click', function() {
+      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          func: (cases) => {
+            // Collect all matches on the page
+            const matches = [];
+            document.querySelectorAll('tr').forEach(row => {
+              cases.forEach(caseNumber => {
+                if (row.textContent.includes(caseNumber)) {
+                  const columns = row.querySelectorAll('td');
+                  const lastTwoColumns = Array.from(columns).slice(-2).map(col => col.innerHTML).join('</td><td>');
+                  matches.push(`<tr><td>${lastTwoColumns}</td></tr>`);
+                }
+              });
+            });
+            return matches;
+          },
+          args: [cases]
+        }, (results) => {
+          const matches = results[0].result;
+          if (matches.length > 0) {
+            // Create a new tab with the matches
+            const newTabContent = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Case Matches</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ddd; padding: 8px; }
+      th { background-color: #f2f2f2; }
+    </style>
+  </head>
+  <body>
+    <h3>Case Matches</h3>
+    <table>
+      <tbody>
+        ${matches.join('')}
+      </tbody>
+    </table>
+  </body>
+</html>
+            `;
+            console.log('New Tab Content:', newTabContent); // Debugging line
+            const blob = new Blob([newTabContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            chrome.tabs.create({ url: url }, function(tab) {
+              // Revoke the object URL after the tab is created to free up memory
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            });
+          } else {
+            console.log('No matches found.');
+          }
+        });
+      });
+    });
+  }
+}); // <-- Added missing closing brace here
 
 // Update the UI list
 function updateCaseList() {
