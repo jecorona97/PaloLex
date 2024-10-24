@@ -48,15 +48,7 @@ function triggerSearchOnPopupOpen() {
     }, () => {
       chrome.storage.local.get(['currentMatchIndex'], (result) => {
         const currentMatchIndex = result.currentMatchIndex || -1;
-        chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases, currentMatchIndex }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('Error sending message:', chrome.runtime.lastError.message);
-          } else if (!response) {
-            console.error('Error sending message: The message port closed before a response was received.');
-          } else {
-            console.log('Triggered search for cases:', cases, 'with currentMatchIndex:', currentMatchIndex);
-          }
-        });
+        chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases, currentMatchIndex }, handleMessageResponse);
       });
     });
   });
@@ -101,15 +93,7 @@ function refreshHighlightsOnPopupClick() {
       console.log('No active tab found.');
       return;
     }
-    chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases }, function(response) {
-      if (chrome.runtime.lastError) {
-        console.error('Error sending message:', chrome.runtime.lastError.message);
-      } else if (!response) {
-        console.error('Error sending message: The message port closed before a response was received.');
-      } else {
-        console.log('Refreshed highlights for remaining cases:', cases);
-      }
-    });
+    chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases }, handleMessageResponse);
   });
 }
 
@@ -124,6 +108,10 @@ function setupSummaryButton() {
 // Generate summary of case matches
 function generateSummary() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs.length === 0) {
+      console.log('No active tab found.');
+      return;
+    }
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
       func: collectMatches,
@@ -195,16 +183,30 @@ function updateCaseList() {
     const li = document.createElement('li');
     li.className = 'case-item';
     li.innerHTML = `
-      <span>${caseNumber}</span>
+      <span class="case-number">${caseNumber}</span>
       <span class="delete-icon">
         <img src="${chrome.runtime.getURL('assets/tashbin.png')}" alt="Delete" width="16" height="16">
       </span>
     `;
     li.querySelector('.delete-icon').addEventListener('click', () => deleteCase(caseNumber));
+    li.querySelector('.case-number').addEventListener('click', () => navigateToCase(caseNumber));
     caseList.appendChild(li);
   });
   console.log('Updated case list:', cases);
   refreshHighlightsAndCounter();
+}
+
+// Navigate to the case in the current tab
+function navigateToCase(caseNumber) {
+  console.log('Attempting to navigate to case:', caseNumber);
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs.length === 0) {
+      console.log('No active tab found.');
+      return;
+    }
+    console.log('Active tab found:', tabs[0].id);
+    chrome.tabs.sendMessage(tabs[0].id, { action: "navigateToCase", caseNumber: caseNumber }, handleMessageResponse);
+  });
 }
 
 // Delete a case from the list
@@ -235,15 +237,16 @@ function refreshHighlightsAndCounter() {
       target: { tabId: tabs[0].id },
       files: ['content.js']
     }, () => {
-      chrome.tabs.sendMessage(tabs[0].id, { action: "updateCases", cases: cases }, function(response) {
-        if (chrome.runtime.lastError) {
-          console.error('Error sending message:', chrome.runtime.lastError.message);
-        } else if (!response) {
-          console.error('Error sending message: The message port closed before a response was received.');
-        } else {
-          console.log('Refreshed highlights and match counter for remaining cases:', cases);
-        }
-      });
+      chrome.tabs.sendMessage(tabs[0].id, { action: "updateCases", cases: cases }, handleMessageResponse);
     });
   });
+}
+
+// Handle message response with error handling
+function handleMessageResponse(response) {
+  if (chrome.runtime.lastError) {
+    console.error('Error sending message:', chrome.runtime.lastError.message);
+  } else {
+    console.log('Message response received:', response || 'No response received.');
+  }
 }
