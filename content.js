@@ -106,7 +106,7 @@
       createNavigationButton('Previous Match', 'caseFinder-prevButton', '90px', goToPreviousMatch);
     }
     if (!matchCounter) {
-      createMatchCounter('caseFinder-matchCounter', '170px');
+      createMatchCounter('caseFinder-matchCounter', '10px');
     }
   }
 
@@ -126,7 +126,7 @@
     const counter = document.createElement('div');
     counter.id = id;
     counter.style.position = 'fixed';
-    counter.style.bottom = '10px';
+    counter.style.bottom = '50px'; // Adjusted to not overlap with the previous button
     counter.style.right = right;
     counter.style.zIndex = 1000;
     counter.style.backgroundColor = 'white';
