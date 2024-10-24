@@ -51,6 +51,8 @@ function triggerSearchOnPopupOpen() {
         chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases, currentMatchIndex }, (response) => {
           if (chrome.runtime.lastError) {
             console.error('Error sending message:', chrome.runtime.lastError.message);
+          } else if (!response) {
+            console.error('Error sending message: The message port closed before a response was received.');
           } else {
             console.log('Triggered search for cases:', cases, 'with currentMatchIndex:', currentMatchIndex);
           }
@@ -102,6 +104,8 @@ function refreshHighlightsOnPopupClick() {
     chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases }, function(response) {
       if (chrome.runtime.lastError) {
         console.error('Error sending message:', chrome.runtime.lastError.message);
+      } else if (!response) {
+        console.error('Error sending message: The message port closed before a response was received.');
       } else {
         console.log('Refreshed highlights for remaining cases:', cases);
       }
@@ -234,6 +238,8 @@ function refreshHighlightsAndCounter() {
       chrome.tabs.sendMessage(tabs[0].id, { action: "updateCases", cases: cases }, function(response) {
         if (chrome.runtime.lastError) {
           console.error('Error sending message:', chrome.runtime.lastError.message);
+        } else if (!response) {
+          console.error('Error sending message: The message port closed before a response was received.');
         } else {
           console.log('Refreshed highlights and match counter for remaining cases:', cases);
         }
