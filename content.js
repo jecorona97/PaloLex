@@ -83,6 +83,7 @@
       match.style.backgroundColor = 'orange';
       match.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+    updateMatchCounter();
   }
 
   function initializeNavigation() {
@@ -96,12 +97,16 @@
   function updateNavigationButtons() {
     const nextButton = document.getElementById('caseFinder-nextButton');
     const prevButton = document.getElementById('caseFinder-prevButton');
+    const matchCounter = document.getElementById('caseFinder-matchCounter');
 
     if (!nextButton) {
       createNavigationButton('Next Match', 'caseFinder-nextButton', '10px', goToNextMatch);
     }
     if (!prevButton) {
       createNavigationButton('Previous Match', 'caseFinder-prevButton', '90px', goToPreviousMatch);
+    }
+    if (!matchCounter) {
+      createMatchCounter('caseFinder-matchCounter', '170px');
     }
   }
 
@@ -115,6 +120,27 @@
     button.style.zIndex = 1000;
     button.onclick = onClick;
     document.body.appendChild(button);
+  }
+
+  function createMatchCounter(id, right) {
+    const counter = document.createElement('div');
+    counter.id = id;
+    counter.style.position = 'fixed';
+    counter.style.bottom = '10px';
+    counter.style.right = right;
+    counter.style.zIndex = 1000;
+    counter.style.backgroundColor = 'white';
+    counter.style.padding = '5px';
+    counter.style.border = '1px solid black';
+    document.body.appendChild(counter);
+    updateMatchCounter();
+  }
+
+  function updateMatchCounter() {
+    const matchCounter = document.getElementById('caseFinder-matchCounter');
+    if (matchCounter) {
+      matchCounter.innerText = `${currentMatchIndex + 1}/${allMatches.length}`;
+    }
   }
 
   document.addEventListener('keydown', (event) => {
