@@ -7,11 +7,15 @@
 
 // Array to store the list of case numbers
 let cases = [];
+let popupOpened = false;
 
 // Load persisted cases on popup open
 document.addEventListener('DOMContentLoaded', () => {
   loadPersistedCases();
-  triggerSearchOnPopupOpen();
+  if (!popupOpened) {
+    triggerSearchOnPopupOpen();
+    popupOpened = true;
+  }
   setupAddCaseButton();
   setupPopupElement();
   setupSummaryButton();

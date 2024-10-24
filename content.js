@@ -12,7 +12,10 @@
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "searchCases") {
-      searchCasesInPage(request.cases);
+      chrome.storage.local.get(['currentMatchIndex'], (result) => {
+        currentMatchIndex = result.currentMatchIndex || -1;
+        searchCasesInPage(request.cases);
+      });
     } else if (request.action === "updateCases") {
       cases = request.cases;
       resetHighlights();
@@ -29,7 +32,6 @@
   function resetHighlights() {
     allMatches.forEach(match => match.style.backgroundColor = '');
     allMatches = [];
-    currentMatchIndex = -1;
   }
 
   /**
@@ -65,6 +67,8 @@
       if (allMatches.length === 0) return;
       currentMatchIndex = (currentMatchIndex + 1) % allMatches.length;
       highlightCurrentMatch();
+      saveCurrentMatchIndex();
+      console.log(`Navigated to next match. Current match index: ${currentMatchIndex}`);
   }
 
   /**
@@ -74,6 +78,8 @@
       if (allMatches.length === 0) return;
       currentMatchIndex = (currentMatchIndex - 1 + allMatches.length) % allMatches.length;
       highlightCurrentMatch();
+      saveCurrentMatchIndex();
+      console.log(`Navigated to previous match. Current match index: ${currentMatchIndex}`);
   }
 
   function highlightCurrentMatch() {
@@ -87,11 +93,15 @@
   }
 
   function initializeNavigation() {
-    if (allMatches.length > 0) {
+    if (allMatches.length > 0 && currentMatchIndex === -1) {
       currentMatchIndex = 0;
       highlightCurrentMatch();
     }
     updateNavigationButtons();
+  }
+
+  function saveCurrentMatchIndex() {
+    chrome.storage.local.set({ currentMatchIndex: currentMatchIndex });
   }
 
   function updateNavigationButtons() {
