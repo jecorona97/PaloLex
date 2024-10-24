@@ -1,0 +1,15 @@
+{
+    "manifest_version": 3,
+    "name": "Case Finder",
+    "version": "1.0",
+    "permissions": ["activeTab", "storage", "scripting"],
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
+      }
+    ],
+    "action": {
+      "default_popup": "popup.html"
+    }
+  }

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        width: 200px;
+        height: 100px;
+        padding: 10px;
+      }
+      #case-input {
+        width: 80%;
+        margin-bottom: 10px;
+      }
+      .case-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+      }
+      .delete-icon {
+        cursor: pointer;
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Track Cases</h3>
+    <input id="case-input" type="text" placeholder="Enter case (xxxx/xxxx)">
+    <button id="add-case">Add Case</button>
+    <ul id="case-list"></ul>
+    <button id="search-cases">Search Cases</button>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
