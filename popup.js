@@ -42,7 +42,9 @@ function updateCaseList() {
     li.className = 'case-item';
     li.innerHTML = `
       <span>${caseNumber}</span>
-      <span class="delete-icon">🗑️</span>
+      <span class="delete-icon">
+        <img src="${chrome.runtime.getURL('assets/tashbin.png')}" alt="Delete" width="16" height="16">
+      </span>
     `;
     
     // Add delete functionality

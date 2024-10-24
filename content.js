@@ -1,14 +1,28 @@
-// define los casos que te interesan
+/**
+ * This file contains the logic for highlighting and navigating through case numbers
+ * on web pages for the Case Finder Chrome extension.
+ * It works in conjunction with the popup interface to find and highlight
+ * user-specified case numbers across browsing sessions.
+ */
+
+// Array to store case numbers (will be populated from chrome.storage in practice)
 const caseNumbers = ["00037/2024", "00635/2024", "760/2016"];
 let currentMatchIndex = -1;
 let allMatches = [];
 
-// expresion para ignorar caracteres especiales
+/**
+ * Escapes special characters in a string for use in a regular expression.
+ * @param {string} string - The input string to escape.
+ * @return {string} The escaped string.
+ */
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// destaca los renglones que coinciden
+/**
+ * Highlights table rows containing the specified case number.
+ * @param {string} caseNumber - The case number to search for.
+ */
 function highlightRows(caseNumber) {
     const regex = new RegExp(escapeRegExp(caseNumber), 'gi');
     const rows = document.querySelectorAll('tr'); // Assuming the rows are table rows
@@ -21,12 +35,14 @@ function highlightRows(caseNumber) {
     });
 }
 
-// destaca los casos en la lista existente
+// Highlight all cases in the existing list
 caseNumbers.forEach(caseNumber => {
     highlightRows(caseNumber);
 });
 
-// navega a la siguiente coincidencia
+/**
+ * Navigates to the next matching case number in the document.
+ */
 function goToNextMatch() {
     if (allMatches.length === 0) return;
 
@@ -37,7 +53,9 @@ function goToNextMatch() {
     setTimeout(() => match.style.backgroundColor = 'yellow', 1000);
 }
 
-// navega a la coincidencia anterior 
+/**
+ * Navigates to the previous matching case number in the document.
+ */
 function goToPreviousMatch() {
     if (allMatches.length === 0) return;
 
@@ -48,7 +66,7 @@ function goToPreviousMatch() {
     setTimeout(() => match.style.backgroundColor = 'yellow', 1000);
 }
 
-// botones de navegacion
+// Create and append navigation buttons
 const nextButton = document.createElement('button');
 nextButton.innerText = 'Next Match';
 nextButton.style.position = 'fixed';
