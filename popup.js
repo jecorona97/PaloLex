@@ -27,6 +27,7 @@ function loadPersistedCases() {
     if (result.cases) {
       cases = result.cases;
       updateCaseList();
+      refreshHighlightsAndCounter();
       console.log('Loaded cases:', cases);
     } else {
       console.log('No cases found in storage');
@@ -37,12 +38,24 @@ function loadPersistedCases() {
 // Trigger search on current tab when the popup is opened
 function triggerSearchOnPopupOpen() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs.length === 0) {
+      console.log('No active tab found.');
+      return;
+    }
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
       files: ['content.js']
     }, () => {
-      chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases });
-      console.log('Triggered search for cases:', cases);
+      chrome.storage.local.get(['currentMatchIndex'], (result) => {
+        const currentMatchIndex = result.currentMatchIndex || -1;
+        chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases, currentMatchIndex }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('Error sending message:', chrome.runtime.lastError);
+          } else {
+            console.log('Triggered search for cases:', cases, 'with currentMatchIndex:', currentMatchIndex);
+          }
+        });
+      });
     });
   });
 }
@@ -65,7 +78,7 @@ function addCase() {
     saveCases();
     caseInput.value = '';
     console.log('Added case:', caseNumber);
-    refreshHighlights();
+    refreshHighlightsAndCounter();
   } else {
     console.log('Case not added:', caseNumber, 'Already exists:', cases.includes(caseNumber));
   }
@@ -82,8 +95,16 @@ function setupPopupElement() {
 // Refresh highlights when the popup is clicked
 function refreshHighlightsOnPopupClick() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs.length === 0) {
+      console.log('No active tab found.');
+      return;
+    }
     chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases }, function(response) {
-      console.log('Refreshed highlights for remaining cases:', cases);
+      if (chrome.runtime.lastError) {
+        console.error('Error sending message:', chrome.runtime.lastError);
+      } else {
+        console.log('Refreshed highlights for remaining cases:', cases);
+      }
     });
   });
 }
@@ -179,6 +200,7 @@ function updateCaseList() {
     caseList.appendChild(li);
   });
   console.log('Updated case list:', cases);
+  refreshHighlightsAndCounter();
 }
 
 // Delete a case from the list
@@ -186,7 +208,7 @@ function deleteCase(caseNumber) {
   cases = cases.filter(c => c !== caseNumber);
   updateCaseList();
   saveCases();
-  refreshHighlights();
+  refreshHighlightsAndCounter();
   console.log('Removed case:', caseNumber);
 }
 
@@ -194,22 +216,28 @@ function deleteCase(caseNumber) {
 function saveCases() {
   chrome.storage.local.set({ cases: cases }, function() {
     console.log('Cases saved:', cases);
+    refreshHighlightsAndCounter(); // Ensure UI elements are refreshed after saving
   });
 }
 
-// Function to refresh highlights when a case is added or removed
-function refreshHighlights() {
+// Function to refresh highlights and match counter when a case is added or removed
+function refreshHighlightsAndCounter() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs.length === 0) {
+      console.log('No active tab found.');
+      return;
+    }
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
-      func: (cases) => {
-        document.querySelectorAll('tr').forEach(row => {
-          row.style.backgroundColor = '';
-        });
-        searchCasesInPage(cases);
-      },
-      args: [cases]
+      files: ['content.js']
+    }, () => {
+      chrome.tabs.sendMessage(tabs[0].id, { action: "updateCases", cases: cases }, function(response) {
+        if (chrome.runtime.lastError) {
+          console.error('Error sending message:', chrome.runtime.lastError);
+        } else {
+          console.log('Refreshed highlights and match counter for remaining cases:', cases);
+        }
+      });
     });
-    console.log('Refreshed highlights for remaining cases:', cases);
   });
 }

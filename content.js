@@ -12,10 +12,8 @@
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "searchCases") {
-      chrome.storage.local.get(['currentMatchIndex'], (result) => {
-        currentMatchIndex = result.currentMatchIndex || -1;
-        searchCasesInPage(request.cases);
-      });
+      currentMatchIndex = request.currentMatchIndex || -1;
+      searchCasesInPage(request.cases);
     } else if (request.action === "updateCases") {
       cases = request.cases;
       resetHighlights();
@@ -26,6 +24,7 @@
   function searchCasesInPage(casesToSearch) {
     resetHighlights();
     casesToSearch.forEach(caseNumber => highlightRows(caseNumber));
+    console.log(`Highlighted ${allMatches.length} matches for cases: ${casesToSearch.join(', ')}`);
     initializeNavigation();
   }
 
@@ -57,7 +56,6 @@
               allMatches.push(row);
           }
       });
-      console.log(`Highlighted ${allMatches.length} matches for case number: ${caseNumber}`);
   }
 
   /**
@@ -101,7 +99,11 @@
   }
 
   function saveCurrentMatchIndex() {
-    chrome.storage.local.set({ currentMatchIndex: currentMatchIndex });
+    if (chrome && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ currentMatchIndex: currentMatchIndex });
+    } else {
+      console.error('Error: chrome.storage.local is undefined');
+    }
   }
 
   function updateNavigationButtons() {
