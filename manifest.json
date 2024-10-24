@@ -14,7 +14,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/tashbin.png"],
+      "resources": ["assets/tashbin.png", "assets/logo.png"],
       "matches": ["<all_urls>"]
     }
   ],
@@ -29,5 +29,10 @@
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
+  },
+  "icons": {
+    "16": "assets/logo.png",
+    "48": "assets/logo.png",
+    "128": "assets/logo.png"
   }
 }
