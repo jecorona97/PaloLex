@@ -164,7 +164,7 @@ function createNewTabWithMatches(matches) {
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Case Matches</title>
+    <title>Coincidencias de Casos</title>
     <style>
       body { font-family: Arial, sans-serif; padding: 20px; }
       table { width: 100%; border-collapse: collapse; }
@@ -173,7 +173,7 @@ function createNewTabWithMatches(matches) {
     </style>
   </head>
   <body>
-    <h3>Case Matches</h3>
+    <h3>Coincidencias de Casos</h3>
     <table>
       <tbody>
         ${matches.join('')}

@@ -111,10 +111,10 @@
     const matchCounter = document.getElementById('caseFinder-matchCounter');
 
     if (!nextButton) {
-      createNavigationButton('Next Match', 'caseFinder-nextButton', '10px', goToNextMatch);
+      createNavigationButton('Siguiente', 'caseFinder-nextButton', '10px', goToNextMatch);
     }
     if (!prevButton) {
-      createNavigationButton('Previous Match', 'caseFinder-prevButton', '110px', goToPreviousMatch); // Adjusted right position to add space
+      createNavigationButton('Anterior', 'caseFinder-prevButton', '110px', goToPreviousMatch); // Adjusted right position to add space
     }
     if (!matchCounter) {
       createMatchCounter('caseFinder-matchCounter', '10px');
