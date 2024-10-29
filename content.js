@@ -91,15 +91,14 @@
   }
 
   function initializeNavigation() {
-    if (allMatches.length > 0 && currentMatchIndex === -1) {
-      currentMatchIndex = 0;
+    if (allMatches.length > 0) {
       highlightCurrentMatch();
     }
     updateNavigationButtons();
   }
 
   function saveCurrentMatchIndex() {
-    if (chrome && chrome.storage && chrome.storage.local) {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.set({ currentMatchIndex: currentMatchIndex });
     } else {
       console.error('Error: chrome.storage.local is undefined');
@@ -164,8 +163,20 @@
 
   function updateMatchCounter() {
     const matchCounter = document.getElementById('caseFinder-matchCounter');
+    const nextButton = document.getElementById('caseFinder-nextButton');
+    const prevButton = document.getElementById('caseFinder-prevButton');
+    
+    if (allMatches.length === 0) {
+      if (nextButton) nextButton.style.display = 'none';
+      if (prevButton) prevButton.style.display = 'none';
+      return;
+    }
+
     if (matchCounter) {
       matchCounter.innerText = `${currentMatchIndex + 1}/${allMatches.length}`;
+    } else {
+      currentMatchIndex = -1;
+      createMatchCounter('caseFinder-matchCounter', '10px');
     }
   }
 
