@@ -130,12 +130,12 @@ function generateSummary() {
     }
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
-      func: collectMatches,
+      func: collectAndFilterMatches,
       args: [cases]
     }, (results) => {
-      const matches = results[0].result;
-      if (matches.length > 0) {
-        createNewTabWithMatches(matches);
+      const filteredContent = results[0].result;
+      if (filteredContent) {
+        createNewTabWithFilteredContent(filteredContent);
       } else {
         console.log(`No matches found.`);
       }
@@ -143,23 +143,28 @@ function generateSummary() {
   });
 }
 
-// Collect all matches on the page
-function collectMatches(cases) {
-  const matches = [];
-  document.querySelectorAll('tr').forEach(row => {
-    cases.forEach(caseNumber => {
-      if (row.textContent.includes(caseNumber)) {
-        const columns = row.querySelectorAll('td');
-        const lastTwoColumns = Array.from(columns).slice(-2).map(col => col.innerHTML).join('</td><td>');
-        matches.push(`<tr><td>${lastTwoColumns}</td></tr>`);
-      }
-    });
+// Collect and filter matches on the page
+function collectAndFilterMatches(cases) {
+  const casePattern = /\b\d{5}\/\d{4}\b/g;
+  const bodyClone = document.body.cloneNode(true);
+  const rows = bodyClone.querySelectorAll('tr');
+
+  rows.forEach(row => {
+    const rowText = row.textContent;
+    const matches = rowText.match(casePattern) || [];
+    const hasTrackedCase = matches.some(caseNumber => cases.includes(caseNumber));
+    const hasUntrackedCase = matches.some(caseNumber => !cases.includes(caseNumber));
+
+    if (hasUntrackedCase && !hasTrackedCase) {
+      row.remove();
+    }
   });
-  return matches;
+
+  return bodyClone.innerHTML;
 }
 
-// Create a new tab with the matches
-function createNewTabWithMatches(matches) {
+// Create a new tab with the filtered content
+function createNewTabWithFilteredContent(filteredContent) {
   const newTabContent = `
 <!DOCTYPE html>
 <html>
@@ -173,12 +178,7 @@ function createNewTabWithMatches(matches) {
     </style>
   </head>
   <body>
-    <h3>Coincidencias de Casos</h3>
-    <table>
-      <tbody>
-        ${matches.join('')}
-      </tbody>
-    </table>
+    ${filteredContent}
   </body>
 </html>
   `;
