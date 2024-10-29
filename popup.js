@@ -77,7 +77,21 @@ function addCase() {
     refreshHighlightsAndCounter();
   } else {
     console.log(`Case not added: ${caseNumber}, Already exists: ${cases.includes(caseNumber)}`);
+    highlightExistingCase(caseNumber);
   }
+}
+
+// Highlight existing case in the list
+function highlightExistingCase(caseNumber) {
+  const caseItems = document.querySelectorAll('.case-item');
+  caseItems.forEach(item => {
+    if (item.querySelector('.case-number').textContent === caseNumber) {
+      item.style.fontWeight = 'bold';
+      setTimeout(() => {
+        item.style.fontWeight = 'normal';
+      }, 1000);
+    }
+  });
 }
 
 // Setup the popup element
