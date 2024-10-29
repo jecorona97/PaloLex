@@ -28,9 +28,9 @@ function loadPersistedCases() {
       cases = result.cases;
       updateCaseList();
       refreshHighlightsAndCounter();
-      console.log('Loaded cases:', cases);
+      console.log(`Loaded cases: ${cases}`);
     } else {
-      console.log('No cases found in storage');
+      console.log(`No cases found in storage`);
     }
   });
 }
@@ -39,15 +39,17 @@ function loadPersistedCases() {
 function triggerSearchOnPopupOpen() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs.length === 0) {
-      console.log('No active tab found.');
+      console.log(`No active tab found.`);
       return;
     }
+    console.log(`Triggering search on tab found: ${tabs[0].id}`);
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
       files: ['content.js']
     }, () => {
       chrome.storage.local.get(['currentMatchIndex'], (result) => {
         const currentMatchIndex = result.currentMatchIndex || -1;
+        console.log(`Sending search message with currentMatchIndex: ${currentMatchIndex}`);
         chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases, currentMatchIndex }, handleMessageResponse);
       });
     });
@@ -71,10 +73,10 @@ function addCase() {
     updateCaseList();
     saveCases();
     caseInput.value = '';
-    console.log('Added case:', caseNumber);
+    console.log(`Added case: ${caseNumber}`);
     refreshHighlightsAndCounter();
   } else {
-    console.log('Case not added:', caseNumber, 'Already exists:', cases.includes(caseNumber));
+    console.log(`Case not added: ${caseNumber}, Already exists: ${cases.includes(caseNumber)}`);
   }
 }
 
@@ -90,7 +92,7 @@ function setupPopupElement() {
 function refreshHighlightsOnPopupClick() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs.length === 0) {
-      console.log('No active tab found.');
+      console.log(`No active tab found.`);
       return;
     }
     chrome.tabs.sendMessage(tabs[0].id, { action: "searchCases", cases: cases }, handleMessageResponse);
@@ -109,7 +111,7 @@ function setupSummaryButton() {
 function generateSummary() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs.length === 0) {
-      console.log('No active tab found.');
+      console.log(`No active tab found.`);
       return;
     }
     chrome.scripting.executeScript({
@@ -121,7 +123,7 @@ function generateSummary() {
       if (matches.length > 0) {
         createNewTabWithMatches(matches);
       } else {
-        console.log('No matches found.');
+        console.log(`No matches found.`);
       }
     });
   });
@@ -166,7 +168,7 @@ function createNewTabWithMatches(matches) {
   </body>
 </html>
   `;
-  console.log('New Tab Content:', newTabContent);
+  console.log(`New Tab Content: ${newTabContent}`);
   const blob = new Blob([newTabContent], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   chrome.tabs.create({ url: url }, function(tab) {
@@ -192,19 +194,19 @@ function updateCaseList() {
     li.querySelector('.case-number').addEventListener('click', () => navigateToCase(caseNumber));
     caseList.appendChild(li);
   });
-  console.log('Updated case list:', cases);
+  console.log(`Updated case list: ${cases}`);
   refreshHighlightsAndCounter();
 }
 
 // Navigate to the case in the current tab
 function navigateToCase(caseNumber) {
-  console.log('Attempting to navigate to case:', caseNumber);
+  console.log(`Attempting to navigate to case: ${caseNumber}`);
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs.length === 0) {
-      console.log('No active tab found.');
+      console.log(`No active tab found.`);
       return;
     }
-    console.log('Active tab found:', tabs[0].id);
+    console.log(`Active tab found: ${tabs[0].id}`);
     chrome.tabs.sendMessage(tabs[0].id, { action: "navigateToCase", caseNumber: caseNumber }, handleMessageResponse);
   });
 }
@@ -215,13 +217,13 @@ function deleteCase(caseNumber) {
   updateCaseList();
   saveCases();
   refreshHighlightsAndCounter();
-  console.log('Removed case:', caseNumber);
+  console.log(`Removed case: ${caseNumber}`);
 }
 
 // Save cases to storage
 function saveCases() {
   chrome.storage.local.set({ cases: cases }, function() {
-    console.log('Cases saved:', cases);
+    console.log(`Cases saved: ${cases}`);
     refreshHighlightsAndCounter(); // Ensure UI elements are refreshed after saving
   });
 }
@@ -230,7 +232,7 @@ function saveCases() {
 function refreshHighlightsAndCounter() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs.length === 0) {
-      console.log('No active tab found.');
+      console.log(`No active tab found.`);
       return;
     }
     chrome.scripting.executeScript({
@@ -245,8 +247,8 @@ function refreshHighlightsAndCounter() {
 // Handle message response with error handling
 function handleMessageResponse(response) {
   if (chrome.runtime.lastError) {
-    console.error('Error sending message:', chrome.runtime.lastError.message);
+    console.error(`Error sending message: ${chrome.runtime.lastError.message}`);
   } else {
-    console.log('Message response received:', response || 'No response received.');
+    console.log(`Message response received: ${response || 'No response received.'}`);
   }
 }
