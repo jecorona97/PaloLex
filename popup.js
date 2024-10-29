@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadPersistedCases() {
   chrome.storage.local.get(['cases'], function(result) {
     if (result.cases) {
-      cases = result.cases;
+      cases = result.cases.map(caseNumber => caseNumber.replace(/^0+/, '')); // Trim leading zeros
       updateCaseList();
       refreshHighlightsAndCounter();
       console.log(`Loaded cases: ${cases}`);
@@ -67,7 +67,8 @@ function setupAddCaseButton() {
 // Add case to the list
 function addCase() {
   const caseInput = document.getElementById('case-input');
-  const caseNumber = caseInput.value.trim();
+  let caseNumber = caseInput.value.trim();
+  caseNumber = caseNumber.replace(/^0+/, ''); // Trim leading zeros
   if (caseNumber && !cases.includes(caseNumber)) {
     cases.unshift(caseNumber); // Add the new case to the beginning of the array
     updateCaseList();
@@ -152,8 +153,8 @@ function collectAndFilterMatches(cases) {
   rows.forEach(row => {
     const rowText = row.textContent;
     const matches = rowText.match(casePattern) || [];
-    const hasTrackedCase = matches.some(caseNumber => cases.includes(caseNumber));
-    const hasUntrackedCase = matches.some(caseNumber => !cases.includes(caseNumber));
+    const hasTrackedCase = matches.some(caseNumber => cases.includes(caseNumber.replace(/^0+/, ''))); // Trim leading zeros
+    const hasUntrackedCase = matches.some(caseNumber => !cases.includes(caseNumber.replace(/^0+/, ''))); // Trim leading zeros
 
     if (hasUntrackedCase && !hasTrackedCase) {
       row.remove();
