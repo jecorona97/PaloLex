@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Case Finder",
+  "name": "PaloLex",
   "version": "1.0",
   "permissions": ["activeTab", "storage", "scripting"],
   "content_scripts": [
@@ -24,7 +24,7 @@
         "default": "Ctrl+Shift+E",
         "mac": "Command+Shift+E"
       },
-      "description": "Open the Case Finder popup"
+      "description": "Open the PaloLex popup"
     }
   },
   "content_security_policy": {
